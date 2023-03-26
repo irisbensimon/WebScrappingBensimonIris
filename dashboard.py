@@ -4,9 +4,11 @@ from dash import Dash, dcc, html
 import pandas as pd
 from dash.dependencies import Input, Output
 from datetime import datetime, time
+import plotly.graph_objs as go
+
 
 #charger le fichier CSV à partir de l'instance AWS
-lvmh_data = pd.read_csv('cours_action.csv', names = ['Date','Price'])
+lvmh_data = pd.read_csv('/home/ec2-user/Project/WebScrappingBensimonIris/cours_action.csv', names = ['Date','Price'])
 
 # fonction pour calculer le rendement journalier
 def daily_return(df):
@@ -20,10 +22,28 @@ def daily_volatility(df):
 # initialiser l'application Dash
 app = Dash(__name__)
 
+fig = go.Scatter(
+	x=lvmh_data['Date'],
+	y=lvmh_data['Price'],
+	mode='lines',
+	name='LVMH'
+)
+
+
 # créer le layout du dashboard
 app.layout = html.Div([html.H1('Dashboard LVMH'),
+
 	# graphique avec les prix de l'action
-	dcc.Graph(id='price-graph'),
+	dcc.Graph(id='price-graph',
+		figure={
+		'data':[fig],
+		'layout': go.Layout(
+			xaxis={'title': 'Date'},
+			yaxis={'title': 'Price'}
+		)
+	}),
+
+
 
 	# dropdown pour choisir la période de temps
 	html.Label('Période de temps'),
@@ -63,10 +83,10 @@ def update_graph(time_period):
 		df = lvmh_data.tail(len(lvmh_data))
 
     # créer le graphique avec Plotly
-	fig = {'data': [{'x': df.index, 'y': df['Price'], 'type': 'line'}],'layout': {'title': 'Prix de l\'action LVMH'}}
+	fig = {'data': [{'x': df['Date'], 'y': df['Price'], 'type': 'line'}],'layout': {'title': 'Prix de l\'action LVMH'}}
 
 	return fig
-suppress_callback_exceptions=True
+
 
 @app.callback(Output('open-price', 'children'),
               Output('close-price', 'children'),
