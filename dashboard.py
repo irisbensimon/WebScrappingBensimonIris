@@ -9,6 +9,8 @@ import plotly.graph_objs as go
 
 #charger le fichier CSV à partir de l'instance AWS
 lvmh_data = pd.read_csv('/home/ec2-user/Project/WebScrappingBensimonIris/cours_action.csv', names = ['Date','Price'])
+lvmh_data['Date'] = pd.to_datetime(lvmh_data['Date'], format='%Y-%m-%d %H:%M:%S')
+
 
 # fonction pour calculer le rendement journalier
 def daily_return(df):
@@ -18,6 +20,28 @@ def daily_return(df):
 def daily_volatility(df):
 	return df['Price'].pct_change().std() * 100
 
+
+# fonction pour calculer les metrics
+def update_info():
+    # récupérer les données correspondant à la journée
+	today = datetime.today()
+	nine_am = time(hour=9, minute=0, second=0)
+	today_at_nine = datetime.combine(today, nine_am)
+
+	five_pm = time(hour=17, minute=30, second=0)
+	today_at_five = datetime.combine(today, five_pm)
+
+	today_data = lvmh_data.loc[(lvmh_data['Date'] >= today_at_nine)]
+# & (lvmh_data['Date'] <= today_at_five)]
+
+    # calculer les informations sur les prix
+	open_price = today_data.iloc[0]['Price']
+	close_price = today_data.iloc[-1]['Price']
+	daily_vol = daily_volatility(today_data)
+	daily_ret = daily_return(today_data)
+
+    # retourner les informations sous forme de chaînes de caractères
+	return '{:.2f} €'.format(open_price), '{:.2f} €'.format(close_price), '{:.2f}%'.format(daily_vol), '{:.2f}%'.format(daily_ret)
 
 # initialiser l'application Dash
 app = Dash(__name__)
@@ -59,13 +83,8 @@ app.layout = html.Div([html.H1('Dashboard LVMH'),
 	),
 
 # tableau avec les informations sur les prix
-	html.H2('Informations sur les prix'),
-	html.Table([
-		html.Tr([html.Th('Prix d\'ouverture'), html.Td(id='open-price')]),
-		html.Tr([html.Th('Prix de fermeture'), html.Td(id='close-price')]),
-		html.Tr([html.Th('Volatilité journalière'), html.Td(id='daily-volatility')]),
-		html.Tr([html.Th('Rendement journalier'), html.Td(id='daily-return')])
-	])
+	html.Div(className='Informations sur les prix', children=update_info())
+		
 ])
 
 # callback pour mettre à jour le graphique en fonction de la période de temps choisie
@@ -88,36 +107,36 @@ def update_graph(time_period):
 	return fig
 
 
-@app.callback(Output('open-price', 'children'),
-              Output('close-price', 'children'),
-              Output('daily-volatility', 'children'),
-              Output('daily-return', 'children'),
-              Input('interval-component', 'n_intervals'))
+#@app.callback(Output('open-price', 'children'),
+    #          Output('close-price', 'children'),
+   #           Output('daily-volatility', 'children'),
+  #            Output('daily-return', 'children'),
+ #             Input('interval-component', 'n_intervals'))
 
 
 # fonction pour calculer les metrics
-def update_info(n):
+#def update_info(n):
     # récupérer les données correspondant à la journée
-        today = datetime.today()
-        nine_am = time(hour=9, minute=0, second=0)
-        today_at_nine = datetime.combine(today, nine_am)
+       # today = datetime.today()
+       # nine_am = time(hour=9, minute=0, second=0)
+       # today_at_nine = datetime.combine(today, nine_am)
 
-        five_pm = time(hour=17, minute=30, second=0)
-        today_at_five = datetime.combine(today, five_pm)
+       # five_pm = time(hour=17, minute=30, second=0)
+       # today_at_five = datetime.combine(today, five_pm)
 
-        today_data = lvmh_data.loc[(lvmh_data['Date'] >= today_at_nine) & (lvmh_data['Date'] <= today_at_five)]
+      #  today_data = lvmh_data.loc[(lvmh_data['Date'] >= today_at_nine) & (lvmh_data['Date'] <= today_at_five)]
 
     # calculer les informations sur les prix
-        open_price = today_data.iloc[0]['Price']
-        close_price = today_data.iloc[-1]['Price']
-        daily_vol = daily_volatility(today_data)
-        daily_ret = daily_return(today_data)
+        #open_price = today_data.iloc[0]['Price']
+        #close_price = today_data.iloc[-1]['Price']
+       # daily_vol = daily_volatility(today_data)
+       # daily_ret = daily_return(today_data)
 
     # retourner les informations sous forme de chaînes de caractères
-        return '{:.2f} €'.format(open_price), '{:.2f} €'.format(close_price), '{:.2f}%'.format(daily_vol), '{:.2f}%'.format(daily_ret)
+      #  return '{:.2f} €'.format(open_price), '{:.2f} €'.format(close_price), '{:.2f}%'.format(daily_vol), '{:.2f}%'.format(daily_ret)
   
 
 
 if __name__ == '__main__':
-	app.run_server(host = "0.0.0.0",port = 8050, debug=True)
+	app.run_server(host = "0.0.0.0",port = 5080, debug=True)
 
