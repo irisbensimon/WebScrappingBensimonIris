@@ -6,8 +6,7 @@ from dash.dependencies import Input, Output
 from datetime import datetime, time
 import plotly.graph_objs as go
 
-
-#charger le fichier CSV à partir de l'instance AWS
+#charger le fichier CSV
 lvmh_data = pd.read_csv('/home/ec2-user/Project/WebScrappingBensimonIris/cours_action.csv', names = ['Date','Price'])
 lvmh_data['Date'] = pd.to_datetime(lvmh_data['Date'], format='%Y-%m-%d %H:%M:%S')
 
@@ -31,17 +30,27 @@ def update_info():
 	five_pm = time(hour=17, minute=30, second=0)
 	today_at_five = datetime.combine(today, five_pm)
 
-	today_data = lvmh_data.loc[(lvmh_data['Date'] >= today_at_nine)]
-# & (lvmh_data['Date'] <= today_at_five)]
+	today_data = lvmh_data.loc[(lvmh_data['Date'] >= today_at_nine) & (lvmh_data['Date'] <= today_at_five)]
 
+	if len(today_data)>0:
     # calculer les informations sur les prix
-	open_price = today_data.iloc[0]['Price']
-	close_price = today_data.iloc[-1]['Price']
-	daily_vol = daily_volatility(today_data)
-	daily_ret = daily_return(today_data)
+		open_price = today_data.iloc[0]['Price']
+		close_price = today_data.iloc[-1]['Price']
+		daily_vol = daily_volatility(today_data)
+		daily_ret = daily_return(today_data)
+	else:
+		open_price = 0
+		close_price = 0
+		daily_vol = 0
+		daily_ret = 0
 
     # retourner les informations sous forme de chaînes de caractères
 	return '{:.2f} €'.format(open_price), '{:.2f} €'.format(close_price), '{:.2f}%'.format(daily_vol), '{:.2f}%'.format(daily_ret)
+
+
+#on stock les infos
+open_price, close_price, daily_vol, daily_ret = update_info()
+
 
 # initialiser l'application Dash
 app = Dash(__name__)
@@ -83,9 +92,27 @@ app.layout = html.Div([html.H1('Dashboard LVMH'),
 	),
 
 # tableau avec les informations sur les prix
-	html.Div(className='Informations sur les prix', children=update_info())
-		
+	html.Div(className='Informations sur les prix', children=[
+		html.Table([
+			html.Thead(html.Tr([
+				html.Th('Open'),
+				html.Th('Close'),
+				html.Th('Volatility'),
+				html.Th('Returns')
+			])),
+			html.Tbody([html.Tr([
+				html.Td(open_price),
+				html.Td(close_price),
+				html.Td(daily_vol),
+				html.Td(daily_ret)
+				])
+			])
+		])
+	])
+
 ])
+
+
 
 # callback pour mettre à jour le graphique en fonction de la période de temps choisie
 @app.callback(Output('price-graph', 'figure'),Input('time-period', 'value'))
@@ -106,35 +133,6 @@ def update_graph(time_period):
 
 	return fig
 
-
-#@app.callback(Output('open-price', 'children'),
-    #          Output('close-price', 'children'),
-   #           Output('daily-volatility', 'children'),
-  #            Output('daily-return', 'children'),
- #             Input('interval-component', 'n_intervals'))
-
-
-# fonction pour calculer les metrics
-#def update_info(n):
-    # récupérer les données correspondant à la journée
-       # today = datetime.today()
-       # nine_am = time(hour=9, minute=0, second=0)
-       # today_at_nine = datetime.combine(today, nine_am)
-
-       # five_pm = time(hour=17, minute=30, second=0)
-       # today_at_five = datetime.combine(today, five_pm)
-
-      #  today_data = lvmh_data.loc[(lvmh_data['Date'] >= today_at_nine) & (lvmh_data['Date'] <= today_at_five)]
-
-    # calculer les informations sur les prix
-        #open_price = today_data.iloc[0]['Price']
-        #close_price = today_data.iloc[-1]['Price']
-       # daily_vol = daily_volatility(today_data)
-       # daily_ret = daily_return(today_data)
-
-    # retourner les informations sous forme de chaînes de caractères
-      #  return '{:.2f} €'.format(open_price), '{:.2f} €'.format(close_price), '{:.2f}%'.format(daily_vol), '{:.2f}%'.format(daily_ret)
-  
 
 
 if __name__ == '__main__':
